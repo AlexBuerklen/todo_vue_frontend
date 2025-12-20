@@ -1,50 +1,43 @@
 <script setup lang="ts">
-    import { onMounted, onUnmounted, ref } from "vue"
-    import type { TodoTitle } from "@/types/todoTitle"
+    import { onMounted, ref } from "vue"
     import axios from 'axios'
 
-    const todoListTitle = ref<TodoTitle[]>([]);
+    const todoCategories = ref<string[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
-    const controller = new AbortController();
     const baseUrl = "http://localhost:8080"
 
 
-    async function loadTodoTitle(){
+    async function loadTodoTitle() {
         loading.value = true;
-        error.value = null;
+        error.value = null;   
 
         try {
-            const { data } = await axios.get<TodoTitle[]>(baseUrl + "/api/Todo/getTodoTitle", {
-                signal: controller.signal
-            })
-            todoListTitle.value = data
-            console.log(data)
-        } catch (exception: any){
-            if (exception?.name === "CanceledError")
-            return error.value = "Todos mit Titel Liste konnte nicht geladen werden."
+            const { data } = await axios.get<string[]>(baseUrl + "/api/Todo/getTodoTitle");
+                todoCategories.value = data;
+        } catch {
+            error.value = "Todos mit Titel Liste konnte nicht geladen werden.";
         } finally {
-            loading.value = false
+            loading.value = false;
         }
-    }
+}
 
     onMounted(() => { void loadTodoTitle()})
-    onUnmounted(() => controller.abort())
 </script>
 
 <template>
-    <v-navigation-drawer permanent :width="360">
-        <v-list-item title="Todo"></v-list-item>
+    <v-navigation-drawer permanent :width="300" color="blue-grey">
+        <v-card-title>Todos Kategorien</v-card-title>
         <v-divider></v-divider>
 
         <div v-if="loading">Lade...</div>
         <div v-else-if="error"> {{ error }}</div>
 
-        <ul v-else>
-            <li v-for="todo in todoListTitle" :key="todo.id">
-                <div>{{ todo.title }}</div>
-            </li>
-        </ul>
+        <v-list v-else>
+            <v-list-item v-for="category in todoCategories" :key="category">
+                <v-col>{{ category }}</v-col>
+            </v-list-item>
+        </v-list>
 
     </v-navigation-drawer>
 </template>
