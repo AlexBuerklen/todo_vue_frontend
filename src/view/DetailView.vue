@@ -10,9 +10,10 @@
     </v-col>
     <v-list v-else>
         <v-list-item v-for="todo in Todo" :key="todo.id">
-            <v-col>
-                {{ todo }}
-            </v-col>
+            <v-container fluid class="bg-grey-lighten-2 rounded-lg text-black">
+                <v-row> {{ todo.title }} </v-row>
+                <v-row> Due to: {{ todo.due }}</v-row>
+            </v-container>
         </v-list-item>
     </v-list>
 </template>
