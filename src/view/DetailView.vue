@@ -1,19 +1,15 @@
-<script setup lang = "ts">
-    import type { Todo } from "@/types/todo"
+<script setup lang="ts">
+    import type { Todo } from '@/types/todo'
 
-    defineProps<{ Todo: Todo[]}>()
-    
+    defineProps<{ todo: Todo[]}>()
 </script>
+
 <template>
-    <v-col v-if="Todo.length === 0">
-        Klick auf eine Kategorie, um die Todos anzuzeigen
-    </v-col>
-    <v-list v-else>
-        <v-list-item v-for="todo in Todo" :key="todo.id">
-            <v-container fluid class="bg-grey-lighten-2 rounded-lg text-black">
-                <v-row> {{ todo.title }} </v-row>
-                <v-row> Due to: {{ todo.due }}</v-row>
-            </v-container>
+    <v-list>
+        <v-list-item v-for="todoItem in todo" :key="todoItem.id">
+            <v-row> Kategorie: {{ todoItem.category }}</v-row>
+            <v-row> Titel: {{ todoItem.title }} </v-row>
+            <v-row> Due to: {{ todoItem.due }}</v-row>
         </v-list-item>
     </v-list>
 </template>

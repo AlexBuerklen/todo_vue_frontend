@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { onMounted, ref } from "vue"
     import axios from 'axios'
-    import DetailView from "./DetailView.vue";
+    import TodoView from "./TodoView.vue";
     import type { Todo } from '@/types/todo'
 
     const todoCategories = ref<string[]>([]);
@@ -18,7 +18,7 @@
             const { data } = await axios.get<string[]>(baseUrl + "/api/Todo/getTodoCategories");
                 todoCategories.value = data;
         } catch {
-            error.value = "Todos mit gefilterten Kategorien konnte nicht geladen werden.";
+            error.value = "Todos mit gefilterten Kategorien konnten nicht geladen werden.";
         } finally {
             loading.value = false;
         }
@@ -60,7 +60,5 @@
             </v-hover>
         </v-list>
     </v-navigation-drawer>
-    <DetailView
-        :Todo="todoCategoryFilteredList"
-    ></DetailView>
+    <TodoView :todo="todoCategoryFilteredList"></TodoView>
 </template>
