@@ -18,7 +18,6 @@ const originalDescription = ref("");
 const isEditingCalendar = ref(false);
 const focus = ref<string>(Temporal.Now.plainDateISO().toString());
 const monthName = computed(() => Temporal.PlainDate.from(focus.value).toLocaleString("de-DE", { month: "long", year: "numeric",}));
-const selectedCategory = ref<string | null>(null)
 
 watchEffect(() => {
     selectedTodo.value ? selectedTodo.value.id : null;
