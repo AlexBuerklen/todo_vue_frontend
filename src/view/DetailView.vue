@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { Todo } from "@/types/todo";
-import { computed, ref, watch } from "vue";
+import { computed, watchEffect, ref } from "vue";
 import axios from "axios";
 import { Temporal } from "@js-temporal/polyfill"
 
-const props = defineProps<{ todo: Todo[] }>();
+const props = defineProps<{ todo: Todo[], category: string | null;}>();
 const selectedTodo = ref<Todo | null>(null);
 const drawer = ref(false);
 const baseUrl = "http://localhost:8080";
@@ -18,11 +18,12 @@ const originalDescription = ref("");
 const isEditingCalendar = ref(false);
 const focus = ref<string>(Temporal.Now.plainDateISO().toString());
 const monthName = computed(() => Temporal.PlainDate.from(focus.value).toLocaleString("de-DE", { month: "long", year: "numeric",}));
+const selectedCategory = ref<string | null>(null)
 
-watch(
-  () => (selectedTodo.value ? selectedTodo.value.id : null),
-  () => {editedTitle.value = selectedTodo.value ? selectedTodo.value.title : ""}
-);
+watchEffect(() => {
+    selectedTodo.value ? selectedTodo.value.id : null;
+    editedTitle.value = selectedTodo.value ? selectedTodo.value.title : "";
+});
 
 function openTodo(todoItem: Todo) {
   selectedTodo.value = todoItem;
@@ -134,6 +135,7 @@ function nextMonth() { shiftMonth(1); }
   </v-col>
 
   <v-list v-else>
+    <v-container>Kategorie: {{ category }}</v-container>
     <v-list-item
       v-for="todoItem in props.todo"
       :key="todoItem.id"
@@ -141,7 +143,6 @@ function nextMonth() { shiftMonth(1); }
       style="cursor: pointer"
     >
       <v-container fluid class="bg-grey-lighten-2 rounded-lg text-black">
-        <v-row>Kategorie: {{ todoItem.category }}</v-row>
         <v-row>Titel: {{ todoItem.title }}</v-row>
         <v-row>Due to: {{ todoItem.due }}</v-row>
       </v-container>
