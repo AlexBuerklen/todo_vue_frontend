@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { onMounted, ref } from "vue"
     import axios from 'axios'
-    import TodoView from "./TodoView.vue";
+    import TodoView from "./DetailView.vue";
     import type { Todo } from '@/types/todo'
 
     const todoCategories = ref<string[]>([]);

@@ -20,6 +20,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1",
     "@mdi/font": "^7.4.47",
     "@primeuix/themes": "^2.0.2",
     "axios": "^1.13.2",
