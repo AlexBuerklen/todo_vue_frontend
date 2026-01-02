@@ -4,7 +4,7 @@ import { computed, watchEffect, ref } from "vue";
 import axios from "axios";
 import { Temporal } from "@js-temporal/polyfill"
 
-const props = defineProps<{ todo: Todo[], category: string | null;}>();
+const props = defineProps<{ todo: Todo[], category: string | null}>();
 const selectedTodo = ref<Todo | null>(null);
 const drawer = ref(false);
 const baseUrl = "http://localhost:8080";
@@ -16,18 +16,44 @@ const isEditingDescription = ref(false);
 const editedDescription = ref("");
 const originalDescription = ref("");
 const isEditingCalendar = ref(false);
-const focus = ref<string>(Temporal.Now.plainDateISO().toString());
-const monthName = computed(() => Temporal.PlainDate.from(focus.value).toLocaleString("de-DE", { month: "long", year: "numeric",}));
+const currentDate = ref<string>(Temporal.Now.plainDateISO().toString());
+const monthName = computed(() => Temporal.PlainDate.from(currentDate.value).toLocaleString("de-DE", { month: "long", year: "numeric",}));
+const statusMessage = ref(false);
+const statusMessageText = ref("");
+const statusMessageColor = ref("");
 
-watchEffect(() => {
-    selectedTodo.value ? selectedTodo.value.id : null;
-    editedTitle.value = selectedTodo.value ? selectedTodo.value.title : "";
-});
+
+watchEffect(() => { selectedTodo.value ? selectedTodo.value.id : null; });
+
+watchEffect(() => { editedTitle.value = selectedTodo.value ? selectedTodo.value.title : ""; });
 
 function openTodo(todoItem: Todo) {
   selectedTodo.value = todoItem;
   drawer.value = true;
 }
+
+///////////// Date /////////////////
+
+async function setDate(){
+    if(!selectedTodo.value) return;
+
+    error.value = null;
+
+    try {
+      await axios.post(baseUrl + `/api/Todo/changeDueDate/${selectedTodo.value.id}/${currentDate.value}`);
+      
+      statusMessageText.value = "Datum erfolgreich geändert";
+      statusMessage.value = true;
+      statusMessageColor.value = "success";
+    }
+    catch { 
+      statusMessageText.value = "Datum konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu.";
+      statusMessage.value = true;
+      statusMessageColor.value = "error";
+    }
+}
+
+///////////// Date /////////////////
 
 ///////////// Title ////////////////
 
@@ -67,11 +93,19 @@ async function saveTitle() {
     originalTitle.value = newTitle;
 
     isEditingTitle.value = false;
-  } catch { error.value = "Titel konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu."; }
+
+    statusMessageText.value = "Titel erfolgreich geändert";
+    statusMessage.value = true;
+    statusMessageColor.value = "success";
+
+  } catch { 
+    statusMessageText.value = "Titel konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu."; 
+    statusMessage.value = true;
+    statusMessageColor.value = "error";
+  }
 }
 
-////////////////////////////////////
-
+///////////// Title ////////////////
 
 //////////// Description ///////////
 
@@ -109,22 +143,31 @@ async function saveDescription(){
     selectedTodo.value.description = newDescription;
     originalDescription.value = newDescription;
     isEditingDescription.value = false;
-  } catch { error.value = "Beschreibung konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu."; }
+
+    statusMessageText.value = "Beschreibung erfolgreich geändert"
+    statusMessage.value = true;
+    statusMessageColor.value = "success";
+  }
+  catch { 
+      statusMessageText.value = "Beschreibung konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu.";
+      statusMessage.value = true;
+      statusMessageColor.value = "error";
+  }
 }
 
-////////////////////////////////////
+//////////// Description ///////////
 
 //////////// Calendar //////////////
 
 function openCalendar(){ isEditingCalendar.value = true; }
 
-function shiftMonth(direction: 1 | -1) { focus.value = Temporal.PlainDate.from(focus.value).add({ months: direction }).toString(); }
+function shiftMonth(direction: 1 | -1) { currentDate.value = Temporal.PlainDate.from(currentDate.value).add({ months: direction }).toString(); }
 
 function prevMonth() { shiftMonth(-1); }
 
 function nextMonth() { shiftMonth(1); }
 
-////////////////////////////////////
+//////////// Calendar //////////////
 
 </script>
 
@@ -143,7 +186,7 @@ function nextMonth() { shiftMonth(1); }
     >
       <v-container fluid class="bg-grey-lighten-2 rounded-lg text-black">
         <v-row>Titel: {{ todoItem.title }}</v-row>
-        <v-row>Due to: {{ todoItem.due }}</v-row>
+        <v-row>Fällig zum: {{ todoItem.due }}</v-row>
       </v-container>
     </v-list-item>
   </v-list>
@@ -151,7 +194,6 @@ function nextMonth() { shiftMonth(1); }
   <v-navigation-drawer v-model="drawer" temporary location="right" :width="800">
     <v-container v-if="selectedTodo" class="d-flex flex-column ga-2">
       <v-row>
-        <v-col class="text-h6">Kategorie: {{ selectedTodo.category }}</v-col>
         <v-col cols="auto">
           <v-btn
             icon="mdi-close"
@@ -215,6 +257,14 @@ function nextMonth() { shiftMonth(1); }
             @keydown.esc.prevent="cancelEditDescription"
             @blur="cancelEditDescription"
           />
+          <v-snackbar
+          v-model="statusMessage"
+          :timeout="3000"
+          :color="statusMessageColor"
+          location="bottom right"
+          >
+          {{ statusMessageText }}
+          </v-snackbar>
         </v-sheet>
       </v-hover>
 
@@ -256,10 +306,9 @@ function nextMonth() { shiftMonth(1); }
               </v-btn>
 
               <div> {{ monthName }}</div>
-
             </v-toolbar>
             
-            <v-calendar v-model="focus" type="month"></v-calendar>
+            <v-calendar v-model="currentDate" type="month" @click:date="setDate()"></v-calendar>
         </v-container>
       </v-hover>
     </v-container>

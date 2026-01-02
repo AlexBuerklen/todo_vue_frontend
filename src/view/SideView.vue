@@ -28,7 +28,7 @@
     async function loadContentFromCategory(category: string){
         selectedCategory.value = category;
         try {
-            const { data } = await axios.get<Todo[]>(baseUrl + `/api/Todo/getCategoryFilteredTodos/${category}` );
+            const { data } = await axios.get<Todo[]>(baseUrl + `/api/Todo/getCategoryFilteredTodos/${category}`);
             todoCategoryFilteredList.value = data;
         } catch {
             error.value = `Todos mit der Kategorie ${category} konnten nicht geladen`
@@ -37,7 +37,7 @@
         }
     }
 
-    onMounted(() => { void loadTodoCategories()})
+    onMounted(() => {void loadTodoCategories()})
 </script>
 
 <template>
