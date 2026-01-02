@@ -5,7 +5,7 @@ import axios from "axios";
 import { Temporal } from "@js-temporal/polyfill"
 
 const props = defineProps<{ todo: Todo[], category: string | null}>();
-const selectedTodo = ref<Todo | null>(null);
+const selectedTodo = ref<Todo | null>(null);  
 const drawer = ref(false);
 const baseUrl = "http://localhost:8080";
 const error = ref<string | null>(null);
@@ -21,11 +21,21 @@ const monthName = computed(() => Temporal.PlainDate.from(currentDate.value).toLo
 const statusMessage = ref(false);
 const statusMessageText = ref("");
 const statusMessageColor = ref("");
-
+const editedDate = ref("");
+const originalDate = ref("");
 
 watchEffect(() => { selectedTodo.value ? selectedTodo.value.id : null; });
 
 watchEffect(() => { editedTitle.value = selectedTodo.value ? selectedTodo.value.title : ""; });
+
+watchEffect(() => {
+  if (selectedTodo.value?.due) {
+    editedDate.value = isoToGermanDate(selectedTodo.value.due);
+    originalDate.value = editedDate.value;
+    currentDate.value = selectedTodo.value.due;
+  }
+});
+
 
 function openTodo(todoItem: Todo) {
   selectedTodo.value = todoItem;
@@ -34,23 +44,32 @@ function openTodo(todoItem: Todo) {
 
 ///////////// Date /////////////////
 
-async function setDate(){
-    if(!selectedTodo.value) return;
+function isoToGermanDate(date: string): string {
+  return Temporal.PlainDate
+    .from(date)
+    .toLocaleString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+}
 
-    error.value = null;
+async function setDate() {
+  if (!selectedTodo.value) return;
 
-    try {
-      await axios.post(baseUrl + `/api/Todo/changeDueDate/${selectedTodo.value.id}/${currentDate.value}`);
-      
-      statusMessageText.value = "Datum erfolgreich geändert";
-      statusMessage.value = true;
-      statusMessageColor.value = "success";
-    }
-    catch { 
-      statusMessageText.value = "Datum konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu.";
-      statusMessage.value = true;
-      statusMessageColor.value = "error";
-    }
+  try {
+    await axios.post(baseUrl + `/api/Todo/changeDueDate/${selectedTodo.value.id}/${currentDate.value}`);
+
+    selectedTodo.value.due = currentDate.value; 
+
+    statusMessageText.value = "Datum erfolgreich geändert";
+    statusMessage.value = true;
+    statusMessageColor.value = "success";
+  } catch {
+    statusMessageText.value = "Datum konnte nicht geändert werden. Bitte erneut versuchen oder laden Sie die Seite neu.";
+    statusMessage.value = true;
+    statusMessageColor.value = "error";
+  }
 }
 
 ///////////// Date /////////////////
@@ -87,7 +106,7 @@ async function saveTitle() {
   error.value = null;
 
   try {
-    await axios.post( baseUrl + `/api/Todo/changeTitle/${selectedTodo.value.id}/${(newTitle)}`);
+    await axios.post( baseUrl + `/api/Todo/changeTitle/${selectedTodo.value.id}/${newTitle}`);
 
     selectedTodo.value.title = newTitle;
     originalTitle.value = newTitle;
@@ -186,7 +205,7 @@ function nextMonth() { shiftMonth(1); }
     >
       <v-container fluid class="bg-grey-lighten-2 rounded-lg text-black">
         <v-row>Titel: {{ todoItem.title }}</v-row>
-        <v-row>Fällig zum: {{ todoItem.due }}</v-row>
+        <v-row>Fällig zum: {{ isoToGermanDate(todoItem.due) }}</v-row>
       </v-container>
     </v-list-item>
   </v-list>
@@ -276,7 +295,7 @@ function nextMonth() { shiftMonth(1); }
           style="cursor: pointer;"
           @click="openCalendar()"
         >
-          <div>Fällig zum: {{ selectedTodo.due }}</div>
+          <div>Fällig zum: {{ editedDate }}</div>
         </v-sheet>
         <v-container v-if="isEditingCalendar">
             <v-toolbar >
