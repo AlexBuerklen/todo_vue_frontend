@@ -2,24 +2,26 @@
     import { onMounted, ref } from "vue"
     import axios from 'axios'
     import DetailView from "./DetailView.vue";
-    import type { Todo } from '@/types/todo'
+    import type { Category } from "@/types/category";
+    import type { Todo } from "@/types/todo"
 
-    const todoCategories = ref<string[]>([]);
+    const categoriesList = ref<Category[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
     const baseUrl = "http://localhost:8080"
-    const todoCategoryFilteredList = ref<Todo[]>([]);
+    const categories = ref<Category[]>([]);
     const selectedCategory = ref<string | null>(null)
+    const todoCategoryFilteredList = ref<Todo[]>([]);
 
     async function loadTodoCategories() {
         loading.value = true;
         error.value = null;   
 
         try {
-            const { data } = await axios.get<string[]>(baseUrl + "/api/Todo/getTodoCategories");
-                todoCategories.value = data;
+            const { data } = await axios.get<Category[]>(baseUrl + "/api/category/getAllCategories");
+                categoriesList.value = data;
         } catch {
-            error.value = "Todos mit gefilterten Kategorien konnten nicht geladen werden.";
+            error.value = "Kategorien konnten nicht geladen werden.";
         } finally {
             loading.value = false;
         }
@@ -51,13 +53,13 @@
         <div v-else-if="error"> {{ error }}</div>
 
         <v-list v-else>
-            <v-hover v-for="category in todoCategories" :key="category" v-slot="{ isHovering, props }">
+            <v-hover v-for="category in categoriesList" :key="category.id" v-slot="{ isHovering, props }">
                 <v-list-item
                     v-bind="props"
                     :class="{ 'bg-grey-lighten-3': isHovering}"
                     style="cursor: pointer"
                 >        
-                    <v-col @click="loadContentFromCategory(category)">{{ category }}</v-col>
+                    <v-col @click="loadContentFromCategory(category.category)">{{ category.category }}</v-col>
                 </v-list-item>
             </v-hover>
         </v-list>
