@@ -19,6 +19,10 @@
     const loadingTodos = ref(false)
     const detailDrawerOpen = ref(false)
 
+    function onTodoCreated() {
+      if (!selectedCategory.value) return;
+      void loadContentFromCategory(selectedCategory.value);
+    }
 
     function openAddCategory() {
         showAddCategory.value = true
@@ -70,7 +74,7 @@
     async function loadContentFromCategory(category: string){
         selectedCategory.value = category;
         try {
-            const { data } = await axios.get<Todo[]>(baseUrl + `/api/Todo/getCategoryFilteredTodos/${category}`);
+            const { data } = await axios.get<Todo[]>(baseUrl + `/api/todo/getCategoryFilteredTodos/${category}`);
             todoCategoryFilteredList.value = data;
         } catch {
             error.value = `Todos mit der Kategorie ${category} konnten nicht geladen`
@@ -151,6 +155,7 @@
   :category="selectedCategory"
   :loading="loadingTodos"
   @drawer-change="detailDrawerOpen = $event"
+  @todo-created="onTodoCreated"
 />
 </template>
 

@@ -23,7 +23,41 @@ const statusMessageText = ref("");
 const statusMessageColor = ref("");
 const editedDate = ref("");
 const originalDate = ref("");
-const emit = defineEmits<{ (e: "drawer-change", open: boolean): void }>()
+const emit = defineEmits<{
+  (e: "drawer-change", open: boolean): void;
+  (e: "todo-created"): void;
+}>();
+const addTodoDialog = ref(false);
+const addTodoFormRef = ref<any>(null);
+const addTodoFormValid = ref(false);
+const newTodo = ref({
+  title: "",
+  due: Temporal.Now.plainDateISO().toString(), 
+  description: "",
+});
+const todoRules = {
+  required: (v: string) => !!v?.trim() || "Pflichtfeld",
+  min2: (v: string) => (v?.trim()?.length ?? 0) >= 2 || "Mindestens 2 Zeichen",
+  min5: (v: string) => (v?.trim()?.length ?? 0) >= 5 || "Mindestens 5 Zeichen",
+  isoDate: (v: string) => {
+    try {
+      Temporal.PlainDate.from(v);
+      return true;
+    } catch {
+      return "Bitte ein gültiges Datum wählen";
+    }
+  },
+  notPast: (v: string) => {
+    try {
+      const date = Temporal.PlainDate.from(v);
+      const today = Temporal.Now.plainDateISO();
+      return Temporal.PlainDate.compare(date, today) >= 0 || "Datum darf nicht in der Vergangenheit liegen";
+    } catch {
+      return "Bitte ein gültiges Datum wählen";
+    }
+  },
+};
+
 
 watch(drawer, (val) => emit("drawer-change", val))
 
@@ -61,7 +95,7 @@ async function setDate() {
   if (!selectedTodo.value) return;
 
   try {
-    await axios.post(baseUrl + `/api/Todo/changeDueDate/${selectedTodo.value.id}/${currentDate.value}`);
+    await axios.post(baseUrl + `/api/todo/changeDueDate/${selectedTodo.value.id}/${currentDate.value}`);
 
     selectedTodo.value.due = currentDate.value; 
 
@@ -109,7 +143,7 @@ async function saveTitle() {
   error.value = null;
 
   try {
-    await axios.post( baseUrl + `/api/Todo/changeTitle/${selectedTodo.value.id}/${newTitle}`);
+    await axios.post( baseUrl + `/api/todo/changeTitle/${selectedTodo.value.id}/${newTitle}`);
 
     selectedTodo.value.title = newTitle;
     originalTitle.value = newTitle;
@@ -161,7 +195,7 @@ async function saveDescription(){
   error.value = null;
 
   try {
-    await axios.post(baseUrl + `/api/Todo/changeDescription/${selectedTodo.value.id}/${newDescription}`);
+    await axios.post(baseUrl + `/api/todo/changeDescription/${selectedTodo.value.id}/${newDescription}`);
     selectedTodo.value.description = newDescription;
     originalDescription.value = newDescription;
     isEditingDescription.value = false;
@@ -191,6 +225,72 @@ function nextMonth() { shiftMonth(1); }
 
 //////////// Calendar //////////////
 
+//////////// Add Todo //////////////
+
+function resetAddTodoForm() {
+  newTodo.value = {
+    title: "",
+    due: Temporal.Now.plainDateISO().toString(),
+    description: "",
+  };
+
+  addTodoFormRef.value?.resetValidation();
+  error.value = null;
+}
+
+function closeAddTodoDialog() {
+  addTodoDialog.value = false;
+  resetAddTodoForm();
+}
+
+function addTodo() {
+  if (!props.category) {
+    error.value = "Bitte zuerst eine Kategorie auswählen.";
+    return;
+  }
+
+  error.value = null;
+  resetAddTodoForm();
+  addTodoDialog.value = true;
+}
+
+async function submitAddTodo() {
+  if (!props.category) {
+    error.value = "Kategorie fehlt. Bitte wähle eine Kategorie.";
+    return;
+  }
+
+  const result = await addTodoFormRef.value?.validate();
+  if (!result?.valid) return;
+
+  const payload = {
+    title: newTodo.value.title.trim(),
+    description: newTodo.value.description.trim(),
+    due: newTodo.value.due,          
+    category: props.category,        
+  };
+
+  try {
+
+    await axios.post(baseUrl + "/api/todo/saveTodo", payload);
+
+    emit("todo-created");
+
+    statusMessageText.value = "Todo erfolgreich erstellt";
+    statusMessageColor.value = "success";
+    statusMessage.value = true;
+
+
+    closeAddTodoDialog();
+  } catch {
+    statusMessageText.value = "Todo konnte nicht erstellt werden. Bitte erneut versuchen.";
+    statusMessageColor.value = "error";
+    statusMessage.value = true;
+  }
+}
+
+//////////// Add Todo //////////////
+
 </script>
 
 <template>
@@ -202,13 +302,16 @@ function nextMonth() { shiftMonth(1); }
     Lade Todos für "{{ props.category }}"...
   </v-col>
 
-  <v-col v-else-if="props.todo.length === 0">
+  <v-container v-else-if="props.todo.length === 0">
     Keine Todos in der Kategorie "{{ props.category }}"
-  </v-col>
+    <v-btn color="primary" @click="addTodo">Todo hinzufügen</v-btn>
+  </v-container>
 
-  <v-list v-else>
-    <v-container>Kategorie: {{ props.category }}</v-container>
+  <v-container v-else>Kategorie: {{ props.category }}
+      <v-btn color="primary" @click="addTodo">Todo hinzufügen</v-btn>
+  </v-container>
 
+  <v-list>
     <v-list-item
       v-for="todoItem in props.todo"
       :key="todoItem.id"
@@ -344,4 +447,58 @@ function nextMonth() { shiftMonth(1); }
       </v-hover>
     </v-container>
   </v-navigation-drawer>
+
+  <v-dialog v-model="addTodoDialog" max-width="650">
+    <v-card>
+      <v-card-title class="d-flex align-center justify-space-between">
+        <span>Neues Todo</span>
+        <v-btn icon="mdi-close" variant="text" @click="closeAddTodoDialog" />
+      </v-card-title>
+
+      <v-card-subtitle v-if="props.category">
+        Kategorie wird automatisch gesetzt: <strong>{{ props.category }}</strong>
+      </v-card-subtitle>
+
+      <v-card-text>
+        <v-alert v-if="error" type="error" variant="tonal" class="mb-3">
+          {{ error }}
+        </v-alert>
+
+        <v-form ref="addTodoFormRef" v-model="addTodoFormValid">
+          <v-text-field
+            v-model="newTodo.title"
+            label="Titel"
+            variant="outlined"
+            :rules="[todoRules.required, todoRules.min2]"
+            autocomplete="off"
+            class="mb-3"
+          />
+
+          <v-text-field
+            v-model="newTodo.due"
+            label="Fälligkeitsdatum"
+            variant="outlined"
+            type="date"
+            :rules="[todoRules.required, todoRules.isoDate, todoRules.notPast]"
+            class="mb-3"
+          />
+
+          <v-textarea
+            v-model="newTodo.description"
+            label="Beschreibung"
+            variant="outlined"
+            auto-grow
+            :rules="[todoRules.required, todoRules.min5]"
+          />
+        </v-form>
+      </v-card-text>
+
+      <v-card-actions class="justify-end">
+        <v-btn variant="text" @click="closeAddTodoDialog">Abbrechen</v-btn>
+        <v-btn color="primary" :disabled="!addTodoFormValid" @click="submitAddTodo">
+          Speichern
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
