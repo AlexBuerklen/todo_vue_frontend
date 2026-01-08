@@ -4,7 +4,7 @@ import { computed, watchEffect, ref } from "vue";
 import axios from "axios";
 import { Temporal } from "@js-temporal/polyfill"
 
-const props = defineProps<{ todo: Todo[], category: string | null}>();
+const props = defineProps<{ todo: Todo[]; category: string | null; loading: boolean }>()
 const selectedTodo = ref<Todo | null>(null);  
 const drawer = ref(false);
 const baseUrl = "http://localhost:8080";
@@ -191,12 +191,21 @@ function nextMonth() { shiftMonth(1); }
 </script>
 
 <template>
-  <v-col v-if="props.todo.length === 0">
+  <v-col v-if="!props.category">
     Klick auf eine Kategorie, um die Todos anzuzeigen
   </v-col>
 
+  <v-col v-else-if="props.loading">
+    Lade Todos für "{{ props.category }}"...
+  </v-col>
+
+  <v-col v-else-if="props.todo.length === 0">
+    Keine Todos in der Kategorie "{{ props.category }}"
+  </v-col>
+
   <v-list v-else>
-    <v-container>Kategorie: {{ category }}</v-container>
+    <v-container>Kategorie: {{ props.category }}</v-container>
+
     <v-list-item
       v-for="todoItem in props.todo"
       :key="todoItem.id"
