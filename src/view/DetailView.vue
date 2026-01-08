@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Todo } from "@/types/todo";
-import { computed, watchEffect, ref } from "vue";
+import { computed, watchEffect, ref, watch } from "vue";
 import axios from "axios";
 import { Temporal } from "@js-temporal/polyfill"
 
@@ -23,6 +23,9 @@ const statusMessageText = ref("");
 const statusMessageColor = ref("");
 const editedDate = ref("");
 const originalDate = ref("");
+const emit = defineEmits<{ (e: "drawer-change", open: boolean): void }>()
+
+watch(drawer, (val) => emit("drawer-change", val))
 
 watchEffect(() => { selectedTodo.value ? selectedTodo.value.id : null; });
 

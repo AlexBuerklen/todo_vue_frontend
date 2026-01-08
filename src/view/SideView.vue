@@ -17,6 +17,7 @@
     const snackbarText = ref("")
     const snackbarColor = ref<"success" | "error">("success")
     const loadingTodos = ref(false)
+    const detailDrawerOpen = ref(false)
 
 
     function openAddCategory() {
@@ -83,7 +84,7 @@
 </script>
 
 <template>
-  <v-navigation-drawer permanent :width="300" color="blue-grey">
+  <v-navigation-drawer permanent :width="300" color="blue-grey" :class="{ 'drawer-disabled': detailDrawerOpen }">
     <v-row justify="space-between">
       <v-col cols="auto">
         <v-card-title>Kategorien</v-card-title>
@@ -149,7 +150,16 @@
   :todo="todoCategoryFilteredList"
   :category="selectedCategory"
   :loading="loadingTodos"
+  @drawer-change="detailDrawerOpen = $event"
 />
-
 </template>
+
+<style scoped>
+    .drawer-disabled {
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.9; 
+    }
+</style>
+
 
