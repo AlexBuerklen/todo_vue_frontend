@@ -24,6 +24,11 @@
       void loadContentFromCategory(selectedCategory.value);
     }
 
+    function onTodoDeleted(){
+      if(!selectedCategory.value) return;
+      void loadContentFromCategory(selectedCategory.value)
+    }
+
     function openAddCategory() {
         showAddCategory.value = true
         error.value = null
@@ -156,6 +161,7 @@
   :loading="loadingTodos"
   @drawer-change="detailDrawerOpen = $event"
   @todo-created="onTodoCreated"
+  @todo-deleted="onTodoDeleted"
 />
 </template>
 

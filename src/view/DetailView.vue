@@ -26,6 +26,7 @@ const originalDate = ref("");
 const emit = defineEmits<{
   (e: "drawer-change", open: boolean): void;
   (e: "todo-created"): void;
+  (e: "todo-deleted"): void;
 }>();
 const addTodoDialog = ref(false);
 const addTodoFormRef = ref<any>(null);
@@ -36,9 +37,9 @@ const newTodo = ref({
   description: "",
 });
 const todoRules = {
-  required: (v: string) => !!v?.trim() || "Pflichtfeld",
-  min2: (v: string) => (v?.trim()?.length ?? 0) >= 2 || "Mindestens 2 Zeichen",
-  min5: (v: string) => (v?.trim()?.length ?? 0) >= 5 || "Mindestens 5 Zeichen",
+  required: (v: string) => !!v.trim() || "Pflichtfeld",
+  min2: (v: string) => (v.trim().length ?? 0) >= 2 || "Mindestens 2 Zeichen",
+  min5: (v: string) => (v?.trim().length ?? 0) >= 5 || "Mindestens 5 Zeichen",
   isoDate: (v: string) => {
     try {
       Temporal.PlainDate.from(v);
@@ -234,7 +235,7 @@ function resetAddTodoForm() {
     description: "",
   };
 
-  addTodoFormRef.value?.resetValidation();
+  addTodoFormRef.value.resetValidation();
   error.value = null;
 }
 
@@ -260,8 +261,8 @@ async function submitAddTodo() {
     return;
   }
 
-  const result = await addTodoFormRef.value?.validate();
-  if (!result?.valid) return;
+  const result = await addTodoFormRef.value.validate();
+  if (!result.valid) return;
 
   const payload = {
     title: newTodo.value.title.trim(),
@@ -290,6 +291,32 @@ async function submitAddTodo() {
 }
 
 //////////// Add Todo //////////////
+
+/////////// Delete Todo ////////////
+
+async function deleteTodo(){
+  if(!selectedTodo.value) return
+
+  try {
+  await axios.delete(baseUrl + `/api/todo/deleteTodo/${selectedTodo.value.id}`)
+
+    statusMessageText.value = "Todo erfolgreich gelöscht";
+    statusMessageColor.value = "success";
+    statusMessage.value = true;
+
+    drawer.value = false
+
+    emit("todo-deleted");
+    
+  } catch {
+    statusMessageText.value = "Todo konnte nicht gelöscht werden. Bitte erneut versuchen.";
+    statusMessageColor.value = "error";
+    statusMessage.value = true;
+  }
+
+}
+
+/////////// Delete Todo ////////////
 
 </script>
 
@@ -328,12 +355,15 @@ async function submitAddTodo() {
   <v-navigation-drawer v-model="drawer" temporary location="right" :width="800">
     <v-container v-if="selectedTodo" class="d-flex flex-column ga-2">
       <v-row>
-        <v-col cols="auto">
+        <v-col>
           <v-btn
             icon="mdi-close"
             class="bg-grey-lighten-3 text-black"
             @click="drawer = false"
           />
+        </v-col>
+        <v-col class="d-flex justify-center align-center">
+          <v-btn color="error" @click="deleteTodo()">Todo löschen</v-btn>
         </v-col>
       </v-row>
 
